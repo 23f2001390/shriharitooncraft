@@ -1,6 +1,7 @@
 import os, argparse
 import sys
 import gradio as gr
+import torch # Import torch
 from scripts.gradio.i2v_test_application import Image2Video
 sys.path.insert(1, os.path.join(sys.path[0], 'lvdm'))
 
