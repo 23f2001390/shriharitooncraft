@@ -31,19 +31,22 @@ class Image2Video():
         model = load_model_checkpoint(model, ckpt_path)
         model.eval()
 
+        # Always load to CPU first to minimize initial RAM usage
+        self.model = model.cpu()
+        self.device = torch.device("cpu")
+
         if gpu_num > 0 and torch.cuda.is_available():
             if gpu_num > 1:
                 print(f"Using {gpu_num} GPUs with DataParallel.")
-                self.model = nn.DataParallel(model.cuda())
+                self.model = nn.DataParallel(self.model.cuda())
                 self.device = torch.device("cuda:0") # DataParallel uses cuda:0 as primary
             else:
                 print("Using single GPU.")
-                self.model = model.cuda()
+                self.model = self.model.cuda()
                 self.device = torch.device("cuda:0")
         else:
             print("Using CPU for inference.")
-            self.model = model.cpu()
-            self.device = torch.device("cpu")
+            # Already on CPU
         
         self.save_fps = 8
 
@@ -53,6 +56,7 @@ class Image2Video():
             transforms.Resize(min(self.resolution)),
             transforms.CenterCrop(self.resolution),
             ])
+        # Clear cache at the beginning of inference
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
         print('start:', prompt, time.strftime('%Y-%m-%d %H:%M:%S',time.localtime(time.time())))
@@ -72,6 +76,7 @@ class Image2Video():
 
         # text cond
         with torch.no_grad():
+            # Use autocast only if on CUDA
             with torch.cuda.amp.autocast() if self.device.type == 'cuda' else torch.no_grad():
                 text_emb = model_module.get_learned_conditioning([prompt]).to(self.device)
 
