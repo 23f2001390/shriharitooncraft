@@ -36,17 +36,19 @@ class Image2Video():
         self.device = torch.device("cpu")
 
         if gpu_num > 0 and torch.cuda.is_available():
+            # Convert model to half precision (FP16) to reduce memory usage
+            self.model = self.model.half()
             if gpu_num > 1:
-                print(f"Using {gpu_num} GPUs with DataParallel.")
+                print(f"Using {gpu_num} GPUs with DataParallel (FP16).")
                 self.model = nn.DataParallel(self.model.cuda())
                 self.device = torch.device("cuda:0") # DataParallel uses cuda:0 as primary
             else:
-                print("Using single GPU.")
+                print("Using single GPU (FP16).")
                 self.model = self.model.cuda()
                 self.device = torch.device("cuda:0")
         else:
             print("Using CPU for inference.")
-            # Already on CPU
+            # Already on CPU, no half() for CPU unless specifically needed and supported
         
         self.save_fps = 8
 
